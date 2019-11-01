@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import json, argparse, os, csv
 import boto3
 import xmltodict
-
+from datetime import datetime
 
 MTURK_SANDBOX_URL = "https://mturk-requester-sandbox.us-east-1.amazonaws.com"
 MTURK_ACCESS_KEY = os.environ["MTURK_ACCESS_KEY"]
@@ -11,7 +11,7 @@ MTURK_SECRET = os.environ["MTURK_SECRET"]
 
 def main():
     parser = argparse.ArgumentParser(description='Interface with MTurk.')
-    parser.add_argument("subcommand", choices=['posthit', 'getresults', 'assignqualification'],
+    parser.add_argument("subcommand", choices=['posthit', 'getresults', 'assignqualification', 'deletehit'],
         type=str, action="store",
         help="choose a specific subcommand.")
     parser.add_argument("nameofexperimentfiles", metavar="label", type=str, nargs="+",
@@ -39,7 +39,10 @@ def main():
         elif subcommand == "assignqualification":
             live_hit, _ = parse_config(label)
             assign_qualification(label, live_hit, args.qualification_id)
-             
+        elif subcommand == "deletehit":
+            live_hit, _ = parse_config(label)
+            delete_hit(label, live_hit)
+            
 def mturk_client(live_hit=True):
   if live_hit:
     mturk = boto3.client('mturk',
@@ -94,6 +97,21 @@ def add_workerid(workerid, answer_name, answer_obj):
         answer_obj = new_answer_obj
   
   return answer_obj
+
+
+def delete_hit(experiment_label, live_hit=True):
+  hit_id_filename = experiment_label + ".hits"
+  mturk = mturk_client(live_hit = live_hit)
+  print("Retrieving results...")
+  print("-" * 80)
+  results = {"trials": []}
+  result_types = {"trials": "list"}
+  with open(hit_id_filename, "r") as hit_id_file:
+    for hit_id in hit_id_file:
+      hit_id, assignments = hit_id.strip().split()
+      mturk.update_expiration_for_hit(HITId=hit_id, ExpireAt=datetime(2015, 1, 1))
+
+
 
 def get_results(experiment_label, live_hit=True):
   hit_id_filename = experiment_label + ".hits"
