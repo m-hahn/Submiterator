@@ -4,6 +4,7 @@ import json, argparse, os, csv
 import boto3
 import xmltodict
 from datetime import datetime
+import time
 
 MTURK_SANDBOX_URL = "https://mturk-requester-sandbox.us-east-1.amazonaws.com"
 MTURK_ACCESS_KEY = os.environ["MTURK_ACCESS_KEY"]
@@ -109,7 +110,7 @@ def delete_hit(experiment_label, live_hit=True):
   with open(hit_id_filename, "r") as hit_id_file:
     for hit_id in hit_id_file:
       hit_id, assignments = hit_id.strip().split()
-      mturk.update_expiration_for_hit(HITId=hit_id, ExpireAt=datetime(2015, 1, 1))
+      mturk.update_expiration_for_hit(HITId=hit_id, ExpireAt=datetime.fromtimestamp(time.time()-1))
 
 
 
@@ -184,7 +185,7 @@ def write_results(label, results, results_types):
       out_file_name = label + "-" + field + ".csv"
       with open(out_file_name, "w") as out_file:
         print("Writing results to {} ...".format(out_file_name))
-        fieldnames = set().union(*[set(x.keys()) for x in results[field]])
+        fieldnames = sorted(list(set().union(*[set(x.keys()) for x in results[field]])))
         writer = csv.DictWriter(out_file, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(results[field])
