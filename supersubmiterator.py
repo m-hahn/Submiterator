@@ -129,9 +129,11 @@ def get_results(experiment_label, live_hit=True):
       print("-" * 80)
       if worker_results['NumResults'] > 0:
         for a in worker_results['Assignments']:
+          assignment_id = a["AssignmentId"]
           xml_doc = xmltodict.parse(a['Answer'])
           additional_trial_cols = {}
           worker_id = a["WorkerId"]
+          worker_and_assignment_id = worker_id+"_"+assignment_id
           for answer_field in xml_doc['QuestionFormAnswers']['Answer']:
             field_name = answer_field['QuestionIdentifier']
             if field_name == "trials":
@@ -149,15 +151,15 @@ def get_results(experiment_label, live_hit=True):
                   result_types[field_name] = "value"
               
               if result_types[field_name] == "list":
-                l = add_workerid(worker_id, field_name, answer_obj)
+                l = add_workerid(worker_and_assignment_id, field_name, answer_obj)
                 results[field_name].extend(l)
               elif result_types[field_name] == "dict":
-                d = add_workerid(worker_id, field_name, answer_obj)
+                d = add_workerid(worker_and_assignment_id, field_name, answer_obj)
                 results[field_name].append(d)
               elif result_types[field_name] == "value":
                 additional_trial_cols["Answer." + field_name] = answer_obj
 
-          trials = add_workerid(worker_id, "trials", trials)
+          trials = add_workerid(worker_and_assignment_id, "trials", trials)
           for t in trials:
              for col in additional_trial_cols:
                t[col] = additional_trial_cols[col]
